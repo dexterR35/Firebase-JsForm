@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ro" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Formular Simplificat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+      #loadingSpinner {
+        border: 3px solid transparent;
+        border-top: 3px solid white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .error-text,
+      .warning-message {
+        color: #dc2626;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.75rem;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      @media (min-width: 640px) {
+        .form-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #dddddd;
+        margin-bottom: 0.5rem;
+      }
+
+      .input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #a5b4fc; /* indigo-300 */
+        color: #130e5d; /* placeholder + focus color */
+      }
+
+      .input::placeholder {
+        color: #676767; /* placeholder-indigo-400 */
+      }
+
+      .input:focus {
+        outline: none;
+        border-color: #4f46e5; /* indigo-600 */
+        box-shadow: 0 0 0 2px #6366f1; /* focus ring-indigo-500 */
+      }
+
+      .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .checkbox {
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 0.375rem;
+        border: 1px solid #a5b4fc;
+        accent-color: #dddddd;
+      }
+
+      .checkbox-label {
+        font-size: 0.875rem;
+        color: #dddddd;
+        user-select: none;
+        cursor: pointer;
+      }
+
+      .checkbox-label a {
+        color: #dddddd;
+        text-decoration: underline;
+      }
+
+      .checkbox-label a:hover {
+        color: #2010f6;
+      }
+
+      .submit-btn {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: #f51a1a;
+        color: white;
+        font-weight: 600;
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .submit-btn:hover {
+        background-color: #4338ca;
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .error-text {
+        color: red;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
+
+      .hidden {
+        display: none;
+      }
+      /* General page layout */
+      .page-body {
+        min-height: 100vh;
+        width: 100%;
+        background: linear-gradient(
+          to right,
+          #eef2ff,
+          #e0e7ff
+        ); /* Tailwind indigo-50 to 100 */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        margin: 0 auto;
+        font-family: system-ui, sans-serif;
+      }
+
+      /* Title */
+      .page-title {
+        margin: 1.5rem 0;
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1e3a8a; /* indigo-900 */
+      }
+
+      /* Main content layout */
+      .main {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        justify-content: center;
+      }
+      /* F0073B */
+
+      /* Form container */
+      .form-container {
+        background-image: linear-gradient(
+          to bottom,
+          #000a2f,
+          #050a2b,
+          #05092d,
+          #0a0b29,
+          #070437
+        );
+        max-width: 40rem; /* 640px */
+        width: 100%;
+        border-radius: 1.5rem;
+        padding: 2.5rem;
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        border: 1px solid #c7d2fe; /* ring-indigo-200 */
+      }
+      #userForm {
+        background: #ffffff1a;
+        padding: 20px;
+        border-radius: 24px;
+      }
+      @media (min-width: 768px) {
+        .form-container {
+          padding: 2.5rem;
+        }
+      }
+
+      /* Form title */
+      .form-title {
+        font-size: 1.875rem;
+        font-weight: 900;
+        color: #dbdbdb;
+        margin-bottom: 0rem;
+        text-align: center;
+        letter-spacing: -0.025em;
+      }
+      .form-title2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #c7d2fe; /* indigo-200 */
+        margin-bottom: 3rem;
+        text-align: center;
+      }
+
+      /* Modal */
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        z-index: 50;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 1rem;
+        max-width: 28rem;
+        width: 100%;
+        padding: 2rem;
+        position: relative;
+        text-align: center;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1.25rem;
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: #6b7280; /* gray-500 */
+        background: none;
+        border: none;
+        cursor: pointer;
+      }
+
+      .modal-close:hover {
+        color: #1f2937; /* gray-800 */
+      }
+
+      .modal-message {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1.5rem;
+        color: #047857; /* green-700 */
+      }
+
+      .modal-link {
+        display: inline-block;
+        background-color: #4f46e5; /* indigo-600 */
+        color: white;
+        padding: 0.75rem 2rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 0.2s ease-in-out;
+      }
+
+      .modal-link:hover {
+        background-color: #4338ca; /* indigo-700 */
+      }
+
+      /* Reuse form + input + button styles from previous message here */
+    </style>
+  </head>
+
+  <body class="page-body">
+    <div class="page-title">give away</div>
+    <main class="main">
+      <div class="form-container">
+        <h1 class="form-title">NETBET</h1>
+        <h2 class="form-title2">my bet 14.07.20025</h2>
+        <form id="userForm" class="form" novalidate>
+          <div class="form-grid">
+            <div>
+              <label for="lastName" class="label">Nume</label>
+              <input
+                type="text"
+                id="lastName"
+                class="input"
+                placeholder="Ex: Popescu"
+                autocomplete="family-name"
+                maxlength="50"
+              />
+              <div id="lastNameError" class="error-text hidden"></div>
+            </div>
+            <div>
+              <label for="firstName" class="label">Prenume</label>
+              <input
+                type="text"
+                id="firstName"
+                class="input"
+                placeholder="Ex: Ion"
+                autocomplete="given-name"
+                maxlength="50"
+              />
+              <div id="firstNameError" class="error-text hidden"></div>
+            </div>
+          </div>
+
+          <div>
+            <label for="email" class="label">Email</label>
+            <input
+              type="email"
+              id="email"
+              class="input"
+              placeholder="exemplu@email.com"
+              autocomplete="email"
+              maxlength="50"
+            />
+            <div
+              id="emailError"
+              class="error-text hidden"
+              aria-live="polite"
+            ></div>
+            <div
+              id="emailWarning"
+              class="warning-message"
+              style="display: none"
+            ></div>
+          </div>
+
+          <div class="form-grid">
+            <div>
+              <label for="phone" class="label">Telefon</label>
+              <input
+                type="tel"
+                id="phone"
+                class="input"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="10"
+                placeholder="07xxxxxxxx"
+              />
+              <div id="phoneError" class="error-text hidden"></div>
+            </div>
+            <div>
+              <label for="username" class="label">Username</label>
+              <input
+                type="text"
+                id="username"
+                class="input"
+                placeholder="Ex: ista123"
+                autocomplete="username"
+              />
+              <div id="usernameError" class="error-text hidden"></div>
+            </div>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="terms" class="checkbox" disabled />
+            <label for="terms" class="checkbox-label">
+              Am citit și accept
+              <a href="#" target="_blank" rel="noopener noreferrer"
+                >termenii și condițiile</a
+              >
+            </label>
+          </div>
+          <div id="termsError" class="error-text hidden"></div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="gdpr" class="checkbox" disabled />
+            <label for="gdpr" class="checkbox-label">
+              Sunt de acord cu
+              <a href="#" target="_blank" rel="noopener noreferrer"
+                >prelucrarea datelor personale (GDPR)</a
+              >
+            </label>
+          </div>
+          <div id="gdprError" class="error-text hidden"></div>
+
+          <button type="submit" id="submitBtn" class="submit-btn" disabled>
+            Trimite
+            <span
+              id="loadingSpinner"
+              class="spinner hidden"
+              aria-hidden="true"
+            ></span>
+          </button>
+        </form>
+      </div>
+    </main>
+    <!-- Success Modal -->
+    <div id="successModal" class="modal hidden">
+      <div class="modal-content">
+        <button id="closeSuccess" aria-label="Închide" class="modal-close">
+          &times;
+        </button>
+        <h3 class="modal-message">
+          Mulțumim! Datele au fost trimise cu succes.
+        </h3>
+        <a href="https://casino.netbet.ro" target="_blank" class="modal-link">
+          Mergi la NetBet Casino
+        </a>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        serverTimestamp,
+        query,
+        where,
+        getDocs,
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      window.firebaseApp = app;
+      window.db = db;
+
+      window.firebaseUtils = {
+        collection,
+        addDoc,
+        serverTimestamp,
+        query,
+        where,
+        getDocs,
+        db,
+      };
+    </script>
+
+<script>
+  (function($) {
+    $(function() {
+
+      // --- Constants & Config ---
+      const TIMEOUT_DURATION = 10000;
+      const MAX_RETRIES = 2;
+      let isFormSubmitting = false;
+      let currentSubmissionId = 0;
+
+      // Cache for duplicate checks during this session
+      const duplicateCache = {
+        phones: new Set(),
+        emails: new Set(),
+      };
+
+      // Field validation rules
+      const fieldMap = {
+        lastName: {
+          minLength: 2,
+          requiredMessage: "Numele este obligatoriu",
+          minLengthMessage: "Numele trebuie să aibă cel puțin 2 caractere",
+        },
+        firstName: {
+          minLength: 2,
+          requiredMessage: "Prenumele este obligatoriu",
+          minLengthMessage: "Prenumele trebuie să aibă cel puțin 2 caractere",
+        },
+        username: {
+          minLength: 3,
+          requiredMessage: "Username-ul este obligatoriu",
+          minLengthMessage: "Username-ul trebuie să aibă cel puțin 3 caractere",
+        },
+        phone: {
+          regex: /^07\d{8}$/,
+          requiredMessage: "Telefonul este obligatoriu",
+          regexMessage: "Telefonul trebuie să înceapă cu 07 și să aibă 10 cifre",
+        },
+        email: {
+          regex: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
+          requiredMessage: "Email-ul este obligatoriu",
+          regexMessage: "Email-ul nu este valid",
+        },
+      };
+
+      // --- Elements cache ---
+      const elements = {
+        form: $("#userForm"),
+        submitBtn: $("#submitBtn"),
+        terms: $("#terms"),
+        gdpr: $("#gdpr"),
+        loadingSpinner: $("#loadingSpinner"),
+        successModal: $("#successModal"),
+        closeSuccess: $("#closeSuccess"),
+        inputs: {},
+        errors: {},
+        warnings: {},
+        valid: {},
+      };
+      elements.loadingSpinner.hide();
+
+      // --- Utilities ---
+
+      // Sanitize HTML to prevent XSS in output
+      const sanitizeHTML = (str) =>
+        str.replace(
+          /[&<>"'`=\/]/g,
+          (s) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+              "`": "&#96;",
+              "=": "&#61;",
+              "/": "&#47;",
+            }[s])
+        );
+
+      async function submitWithRetry(submissionId, retries = 0) {
+        try {
+          await Promise.race([
+            handleFormSubmit(submissionId),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout")), TIMEOUT_DURATION)
+            ),
+          ]);
+        } catch (err) {
+          if (
+            (err.message === "Timeout" || err.message === "NetworkError") &&
+            retries < MAX_RETRIES
+          ) {
+            console.warn(`Retrying submission... attempt ${retries + 1}`);
+            return submitWithRetry(submissionId, retries + 1);
+          }
+          throw err; // rethrow if no retry or other errors
+        }
+      }
+
+      // Email domain typo suggestions
+      const getEmailWarning = (email) => {
+        const typos = {
+          "gmai.com": "gmail.com",
+          "gamil.com": "gmail.com",
+          "gmal.com": "gmail.com",
+          "hotmial.com": "hotmail.com",
+          "yahooo.com": "yahoo.com",
+          "outlookl.com": "outlook.com",
+        };
+        const domain = (email.split("@")[1] || "").toLowerCase();
+        return typos[domain]
+          ? `Email-ul pare greșit. Ați vrut ${sanitizeHTML(typos[domain])}?`
+          : "";
+      };
+
+      // Debounce helper - delays function execution
+      function debounce(fn, delay) {
+        let timer;
+        const debounced = function(...args) {
+          clearTimeout(timer);
+          timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+        debounced.cancel = () => clearTimeout(timer);
+        return debounced;
+      }
+
+      // Validate a single field, return error message or empty string
+      const validateField = (field, value) => {
+        const {
+          minLength,
+          regex,
+          requiredMessage,
+          minLengthMessage,
+          regexMessage,
+        } = fieldMap[field];
+        if (!value.trim()) return requiredMessage;
+        if (minLength && value.length < minLength) return minLengthMessage;
+        if (regex && !regex.test(value)) return regexMessage;
+        return "";
+      };
+
+      // Show error or warning messages with styling (no ARIA)
+      const showMessage = (type, field, message) => {
+        const errorEl = elements.errors[field];
+        const warningEl = elements.warnings[field];
+        const input = elements.inputs[field];
+
+        if (type === "error") {
+          $(errorEl).text(message);
+          if (message) $(errorEl).show();
+          else $(errorEl).hide();
+
+          // Reset input border style based on error presence
+          if (message) {
+            input.css("border-color", "red");
+          } else {
+            input.css("border-color", "");
+          }
+        } else if (type === "warning") {
+          if (!elements.errors[field].text()) {
+            if (warningEl) {
+              $(warningEl).text(message);
+              if (message) $(warningEl).show();
+              else $(warningEl).hide();
+
+              // Orange border only if no error
+              if (message) {
+                input.css("border-color", "orange");
+              } else {
+                input.css("border-color", "");
+              }
+            }
+          } else {
+            if (warningEl) {
+              $(warningEl).text("").hide();
+              input.css("border-color", "");
+            }
+          }
+        }
+      };
+
+      // Validate field, update validity state and messages
+      const validateFieldAndUpdateState = (field) => {
+        const value = elements.inputs[field].val().trim();
+        const error = validateField(field, value);
+        const emailWarning =
+          field === "email" && !error ? getEmailWarning(value) : "";
+
+        showMessage("error", field, error);
+        if (field === "email") showMessage("warning", field, emailWarning);
+
+        elements.valid[field] = !error && (!emailWarning || field !== "email");
+      };
+
+      // Check if whole form is valid
+      const isFormValid = () =>
+        Object.values(elements.valid).every(Boolean);
+
+      // Enable/disable terms and GDPR checkboxes based on inputs validity
+      const toggleCheckboxes = () => {
+        const inputsValid = isFormValid();
+        elements.terms.prop("disabled", !inputsValid);
+        elements.gdpr.prop("disabled", !inputsValid);
+        if (!inputsValid) {
+          elements.terms.prop("checked", false);
+          elements.gdpr.prop("checked", false);
+        }
+      };
+
+      // Enable/disable submit button based on form and checkboxes state
+      const toggleSubmitBtn = () => {
+        const shouldDisable = !isFormValid() ||
+          !elements.terms.prop("checked") ||
+          !elements.gdpr.prop("checked") ||
+          isFormSubmitting;
+        elements.submitBtn.prop("disabled", shouldDisable);
+      };
+
+      // Combined UI update helper
+      const updateUIState = () => {
+        toggleCheckboxes();
+        toggleSubmitBtn();
+      };
+
+      // Reset form and internal state
+      const resetForm = () => {
+        elements.form[0].reset();
+        for (const field in elements.valid) elements.valid[field] = false;
+        for (const field in elements.errors)
+          showMessage("error", field, "");
+        for (const field in elements.warnings)
+          showMessage("warning", field, "");
+        updateUIState();
+        elements.inputs.firstName.focus();
+      };
+
+      // Focus first invalid field 
+      const focusFirstInvalidField = () => {
+        for (const field in elements.valid) {
+          if (!elements.valid[field]) {
+            elements.inputs[field].focus();
+            break;
+          }
+        }
+      };
+
+      // Check duplicates with cache; return { phoneUsed, emailUsed }
+      async function checkDuplicates(phone, email) {
+        let phoneUsed = false;
+        let emailUsed = false;
+
+        // Check cache first
+        if (duplicateCache.phones.has(phone)) {
+          phoneUsed = true;
+        } else {
+          // Query Firestore phone
+          const db = window.firebaseUtils.db;
+          const collRef = window.firebaseUtils.collection(
+            db,
+            "GiveAwayPSGToTT"
+          );
+          const phoneQuery = window.firebaseUtils.query(
+            collRef,
+            window.firebaseUtils.where("phone", "==", phone)
+          );
+          const phoneSnapshot = await window.firebaseUtils.getDocs(
+            phoneQuery
+          );
+          if (!phoneSnapshot.empty) {
+            duplicateCache.phones.add(phone);
+            phoneUsed = true;
+          }
+        }
+
+        if (duplicateCache.emails.has(email)) {
+          emailUsed = true;
+        } else {
+          const db = window.firebaseUtils.db;
+          const collRef = window.firebaseUtils.collection(
+            db,
+            "GiveAwayPSGToTT"
+          );
+          const emailQuery = window.firebaseUtils.query(
+            collRef,
+            window.firebaseUtils.where("email", "==", email)
+          );
+          const emailSnapshot = await window.firebaseUtils.getDocs(
+            emailQuery
+          );
+          if (!emailSnapshot.empty) {
+            duplicateCache.emails.add(email);
+            emailUsed = true;
+          }
+        }
+
+        return { phoneUsed, emailUsed };
+      }
+
+      // --- Form submission handler ---
+      const handleFormSubmit = async (submissionId) => {
+        const data = {};
+        for (const field in fieldMap) {
+          data[field] = elements.inputs[field].val().trim();
+        }
+        data.timestamp = window.firebaseUtils.serverTimestamp();
+
+        // Check duplicates with cache
+        const { phoneUsed, emailUsed } = await checkDuplicates(
+          data.phone,
+          data.email
+        );
+
+        // If submission is outdated, ignore results
+        if (submissionId !== currentSubmissionId) {
+          console.log("Ignoring outdated submission result");
+          return;
+        }
+
+        if (phoneUsed || emailUsed) {
+          if (phoneUsed)
+            showMessage("error", "phone", "Telefon deja folosit");
+          if (emailUsed)
+            showMessage("error", "email", "Email deja folosit");
+          updateUIState();
+          focusFirstInvalidField();
+          throw new Error("Duplicate phone/email");
+        }
+
+        // Add new document to Firestore
+        const db = window.firebaseUtils.db;
+        const collRef = window.firebaseUtils.collection(
+          db,
+          "GiveAwayPSGToTT"
+        );
+        await window.firebaseUtils.addDoc(collRef, data);
+
+        // Again check if submission is still current
+        if (submissionId !== currentSubmissionId) {
+          console.log("Ignoring outdated submission result after addDoc");
+          return;
+        }
+
+        // Show success modal with sanitized name
+        elements.successModal
+          .show()
+          .find(".success-message")
+          .text(
+            `Mulțumim, ${sanitizeHTML(data.firstName)} ${sanitizeHTML(
+              data.lastName
+            )}!Înregistrarea a fost realizată.
+            `
+          );
+
+        // Cache this phone and email 
+        duplicateCache.phones.add(data.phone);
+        duplicateCache.emails.add(data.email);
+      };
+
+      // Cache inputs, errors, warnings, set IDs if missing
+      for (const field in fieldMap) {
+        elements.inputs[field] = $("#" + field);
+        elements.errors[field] = $("#" + field + "Error");
+        elements.valid[field] = false;
+
+        if (field === "email") {
+          elements.warnings[field] = $("#emailWarning");
+        }
+
+        // Ensure error and warning IDs 
+        if (!elements.errors[field].attr("id")) {
+          elements.errors[field].attr("id", field + "Error");
+        }
+        if (field === "email" && elements.warnings[field]) {
+          if (!elements.warnings[field].attr("id")) {
+            elements.warnings[field].attr("id", "emailWarning");
+          }
+        }
+      }
+
+      // Attach event handlers with debounced input validation
+      const debouncedHandlers = {};
+      for (const field in fieldMap) {
+        debouncedHandlers[field] = debounce(() => {
+          if (isFormSubmitting) return;
+          validateFieldAndUpdateState(field);
+          updateUIState();
+        }, 300);
+
+        elements.inputs[field]
+          .on("input", debouncedHandlers[field])
+          .on("blur", () => {
+            debouncedHandlers[field].cancel();
+            if (isFormSubmitting) return;
+            validateFieldAndUpdateState(field);
+            updateUIState();
+          });
+      }
+
+      // Checkbox changes update submit button state
+      elements.terms.on("change", updateUIState);
+      elements.gdpr.on("change", updateUIState);
+
+      // Success modal close button
+      elements.closeSuccess.on("click", () => {
+        elements.successModal.hide();
+        resetForm();
+      });
+
+      // Submit handler
+      elements.form.on("submit", async (e) => {
+        e.preventDefault();
+        if (isFormSubmitting) return;
+
+        // Validate all fields before submit
+        for (const field in fieldMap) {
+          validateFieldAndUpdateState(field);
+        }
+        updateUIState();
+
+        if (!isFormValid()) {
+          focusFirstInvalidField();
+          return;
+        }
+
+        if (
+          !elements.terms.prop("checked") ||
+          !elements.gdpr.prop("checked")
+        ) {
+          alert("Trebuie să acceptați termenii și GDPR");
+          return;
+        }
+
+        // Start submitting
+        isFormSubmitting = true;
+        elements.submitBtn.prop("disabled", true);
+        elements.loadingSpinner.show();
+
+        // Increment submission ID to invalidate previous submissions
+        currentSubmissionId++;
+        const submissionId = currentSubmissionId;
+        console.log(submissionId, "submisionid");
+
+        try {
+          await submitWithRetry(submissionId);
+        } catch (err) {
+          if (err.message !== "Duplicate phone/email") {
+            alert(
+              "A apărut o eroare la trimiterea formularului. Reîncercați."
+            );
+          }
+        } finally {
+          if (submissionId === currentSubmissionId) {
+            isFormSubmitting = false;
+            elements.loadingSpinner.hide();
+            updateUIState();
+          }
+        }
+      });
+
+      // Initial UI setup
+      resetForm();
+    });
+  })(jQuery);
+</script>
+
+  </body>
+</html>
