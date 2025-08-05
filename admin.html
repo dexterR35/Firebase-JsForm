@@ -1,378 +1,671 @@
 <!DOCTYPE html>
 <html lang="ro" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Netbet - Tabel Formular</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Netbet - Tabel Formular</title>
 
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-  <!-- DataTables CSS + JS + Buttons + CSV export -->
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css"
-  />
-  <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <!-- DataTables CSS + JS + Buttons + CSV export -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css"
+    />
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
-  <!-- Firebase -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    getDocs,
-    doc,
-    getDoc,
-    updateDoc,
-    deleteDoc,
-  } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+    <!-- Firebase -->
 
-    const firebaseConfig = {
-    
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
- 
-  window.firebaseAdmin = {
-    db,
-    collection,
-    getDocs,
-    doc,
-    getDoc,   // Ensure getDoc is available in the global scope
-    updateDoc,
-    deleteDoc,
-  };
-  </script>
-
-  <style>
-    td.editable {
-      cursor: pointer;
-      background-color: #f9fafb;
-      transition: background-color 0.3s ease;
-    }
-    td.editable:hover {
-      background-color: #e0e7ff;
-    }
-    .action-btn {
-      cursor: pointer;
-      color: #4f46e5;
-      font-weight: 600;
-    }
-    .action-btn:hover {
-      text-decoration: underline;
-    }
-    .table-container {
-      overflow-x: auto;
-    }
-    .download-btn {
-      background-color: #4f46e5;
-      color: white;
-      font-weight: 600;
-      padding: 10px 20px;
-      border-radius: 5px;
-      text-decoration: none;
-    }
-    .download-btn:hover {
-      background-color: #4338ca;
-    }
-    .timestamp {
-      font-style: italic;
-      color: #6b7280;
-    }
-  </style>
-</head>
-<body class="min-h-screen bg-indigo-50 p-6">
-
-  <main class="max-w-[95em] mx-auto bg-white p-8 rounded-3xl shadow-xl ring-1 ring-indigo-300">
-    <h1 class="text-2xl font-extrabold mb-6 text-indigo-900 text-center">
-      Netbet - Tabel GiveAway
-    </h1>
-
-    <section>
-      <div class="flex justify-between mb-6">
-        <!-- Removed the manual export button -->
-        <span class="timestamp">Ultima actualizare: <span id="lastUpdated">N/A</span></span>
-      </div>
-
-      <div class="table-container">
-        <table id="adminTable" class="display stripe hover" style="width:100%">
-          <thead>
-            <tr>
-              <th>Nume</th>
-              <th>Prenume</th>
-              <th>Username</th>
-              <th>Telefon</th>
-              <th>Email</th>
-              <th>Data Creării</th>
-              <th>Acțiuni</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-<script>
-  $(async function () {
-    const { db, collection, getDocs,getDoc, doc, updateDoc, deleteDoc } = window.firebaseAdmin;
-    const colRef = collection(db, "GiveAwayPSGToTT");
-    let table;
-
-    // Format timestamp into a readable format
-    function formatTimestamp(ts) {
-      if (!ts) return "";
-      
-      let date;
-      if (ts && ts.toDate) {
-        // Firebase Timestamp
-        date = ts.toDate();
-      } else if (typeof ts === "string") {
-        // If it's stored as a string, try converting it to a date
-        date = new Date(ts);
-      } else if (ts instanceof Date) {
-        // If it's already a Date object
-        date = ts;
-      }
-      
-      if (!date || isNaN(date)) return ""; // Ensure the date is valid
-
-      // Format the date to a readable format (in Romanian)
-      return date.toLocaleString("ro-RO", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    }
-
-    function validateEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    }
-
-    function validatePhone(phone) {
-      return /^\d{10}$/.test(phone);
-    }
-
-    async function loadData() {
-      const snapshot = await getDocs(colRef);
-      const data = [];
-      snapshot.forEach((docSnap) => {
-        const d = docSnap.data();
-        data.push({
-          id: docSnap.id,
-          lastName: d.lastName,
-          firstName: d.firstName,
-          username: d.username,
-          phone: d.phone,
-          email: d.email,
-          createdAt: d.timestamp, // Use the actual timestamp field here
-        });
-      });
-      return data;
-    }
-
-    function renderTable(data) {
-      if ($.fn.dataTable.isDataTable("#adminTable")) {
-        table.clear().rows.add(data).draw();
-        return;
+    <style>
+      :root {
+        --primary: #06276d;
+        --primary-dark: #001da0;
+        --secondary: #16264b;
+        --background: #f8fafc;
       }
 
-      table = $("#adminTable").DataTable({
-        data,
-        columns: [
-          {
-            data: "lastName",
-            className: "editable",
-            render: (data) => `<span class="editable-cell">${data || ""}</span>`,
-          },
-          {
-            data: "firstName",
-            className: "editable",
-            render: (data) => `<span class="editable-cell">${data || ""}</span>`,
-          },
-          {
-            data: "username",
-            className: "editable",
-            render: (data) => `<span class="editable-cell">${data || ""}</span>`,
-          },
-          {
-            data: "phone",
-            className: "editable",
-            render: (data) => `<span class="editable-cell">${data || ""}</span>`,
-          },
-          {
-            data: "email",
-            className: "editable",
-            render: (data) => `<span class="editable-cell">${data || ""}</span>`,
-          },
-          {
-            data: "createdAt",
-            render: (data) => formatTimestamp(data), // Format timestamp using formatTimestamp
-          },
-          {
-            data: null,
-            orderable: false,
-            render: function (_, __, rowData) {
-              return `
+      body {
+        background: var(--background);
+        min-height: 100vh;
+        font-family: "Inter", sans-serif;
+      }
+
+      .table-container {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-top: 2rem;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #adminTable {
+        width: 100% !important;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+        margin-top: 1rem;
+      }
+
+      #adminTable thead th {
+        background: var(--secondary);
+        color: white;
+        font-weight: 600;
+        padding: 1rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      #adminTable thead th:first-child {
+        border-radius: 10px 0 0 10px;
+      }
+
+      #adminTable thead th:last-child {
+        border-radius: 0 10px 10px 0;
+      }
+
+      #adminTable tbody tr td:last-child {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+      }
+
+      .max-w-7xl {
+        max-width: 90% !important;
+      }
+      /* 
+    #adminTable tbody tr {
+      background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    } */
+
+      /* #adminTable tbody tr:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    } */
+
+      #adminTable td {
+        padding: 1rem;
+        color: var(--secondary);
+        box-shadow: unset !important;
+      }
+
+      .action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        margin: 0 0.25rem;
+      }
+
+      .editBtn {
+        background: var(--primary);
+        color: white;
+      }
+
+      .saveBtn {
+        background: #006525;
+        color: white;
+      }
+
+      .cancelBtn {
+        background: #767d67;
+        color: white;
+      }
+
+      .deleteBtn {
+        background: #ff0000;
+        color: white !important;
+      }
+
+      .dt-buttons {
+        margin-bottom: 1.5rem;
+      }
+
+      .dt-buttons .bg-indigo-600 {
+        border: none !important;
+        padding: 0.75rem 1.5rem !important;
+        border-radius: 10px !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.025em !important;
+        box-shadow: 0 4px 6px rgba(45, 212, 191, 0.2) !important;
+        transition: all 0.2s !important;
+      }
+
+      .dataTables_wrapper .dataTables_filter input {
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s;
+        width: 250px;
+        margin-left: 0.5rem;
+      }
+
+      .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.2);
+      }
+
+      .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        margin: 0 0.25rem !important;
+        background: #f1f5f9 !important;
+        color: var(--secondary) !important;
+        font-weight: 500 !important;
+        transition: all 0.2s !important;
+      }
+
+      .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--primary) !important;
+        color: white !important;
+      }
+
+      .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--primary-dark) !important;
+        color: white !important;
+      }
+
+      .main-title {
+        color: var(--secondary);
+        font-size: 2.25rem;
+        font-weight: 800;
+        text-align: center;
+        margin: 2rem 0;
+        position: relative;
+        display: inline-block;
+      }
+
+      /* .main-title::after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary) 0%, #06b6d4 100%);
+        border-radius: 2px;
+      } */
+
+      .timestamp {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        color: var(--secondary);
+        font-weight: 500;
+        gap: 1rem;
+      }
+
+      .dt-buttons button {
+        background: var(--primary-dark) !important;
+        color: white !important;
+      }
+
+      .timestamp::before {
+        content: "🕒";
+        margin-right: 0.5rem;
+      }
+
+      @media (max-width: 640px) {
+        .table-container {
+          padding: 1rem;
+          margin-top: 1rem;
+        }
+
+        .main-title {
+          font-size: 1.5rem;
+        }
+
+        .action-btn {
+          padding: 0.375rem 0.75rem;
+          font-size: 0.75rem;
+        }
+      }
+
+      #lastUpdated {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .timestamp {
+        width: 100%;
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        padding: 2rem;
+      }
+
+      .main-title {
+        text-transform: uppercase;
+      }
+    </style>
+
+    <!-- Add Inter font -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="min-h-screen bg-indigo-50">
+    <main class="max-w-7xl mx-auto mb-10">
+      <div class="flex justify-center">
+        <h1 class="main-title">Netbet - GiveAway Aug 2025</h1>
+      </div>
+      <section>
+        <div
+          class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4"
+        >
+          <span class="timestamp"
+            >Last user: <span id="lastUpdated">N/A</span></span
+          >
+        </div>
+        <div class="table-container">
+          <table
+            id="adminTable"
+            class="display w-full text-base"
+            style="width: 10%"
+          >
+            <thead>
+              <tr>
+                <th>Nume</th>
+                <th>Prenume</th>
+                <th>Username</th>
+                <th>Telefon</th>
+                <th>Email</th>
+                <th>Data Creării</th>
+                <th>Acțiuni</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        getDocs,
+        doc,
+        getDoc,
+        updateDoc,
+        orderBy,
+        limit,
+        query,
+        deleteDoc,
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyDiOqUAHF9DX9x-VdRhaGPc2_Yfj305Jxc",
+        authDomain: "netbet-ea33f.firebaseapp.com",
+        databaseURL:
+          "https://netbet-ea33f-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "netbet-ea33f",
+        storageBucket: "netbet-ea33f.appspot.com",
+        messagingSenderId: "184670151760",
+        appId: "1:184670151760:web:08506858f2b8843fb19d55",
+        measurementId: "G-7FX1PZEFQW",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      window.firebaseAdmin = {
+        db,
+        collection,
+        getDocs,
+        doc,
+        getDoc,
+        updateDoc,
+        deleteDoc,
+        limit,
+        query,
+        orderBy,
+      };
+    </script>
+    <script>
+      $(async function () {
+        const { db, collection, getDocs, getDoc, doc, updateDoc, deleteDoc } =
+          window.firebaseAdmin;
+        const colRef = collection(db, "GiveAwayPSGToTT");
+        let table;
+
+        // Format timestamp into a readable format
+        function formatTimestamp(ts) {
+          if (!ts) return "";
+
+          let date;
+          if (ts && ts.toDate) {
+            // Firebase Timestamp
+            date = ts.toDate();
+          } else if (typeof ts === "string") {
+            // If it's stored as a string, try converting it to a date
+            date = new Date(ts);
+          } else if (ts instanceof Date) {
+            // If it's already a Date object
+            date = ts;
+          }
+
+          if (!date || isNaN(date)) return ""; // Ensure the date is valid
+
+          // Format the date to a readable format (in Romanian)
+          return date.toLocaleString("ro-RO", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        }
+
+        function validateEmail(email) {
+          const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return re.test(email);
+        }
+
+        function validatePhone(phone) {
+          return /^\d{10}$/.test(phone);
+        }
+
+        async function loadData() {
+          const snapshot = await getDocs(colRef);
+          const data = [];
+          snapshot.forEach((docSnap) => {
+            const d = docSnap.data();
+            data.push({
+              id: docSnap.id,
+              lastName: d.lastName,
+              firstName: d.firstName,
+              username: d.username,
+              phone: d.phone,
+              email: d.email,
+              createdAt: d.timestamp, // Use the actual timestamp field here
+            });
+          });
+          return data;
+        }
+        async function loadLastUpdate() {
+          const { query, orderBy, limit, getDocs, collection } =
+            window.firebaseAdmin;
+          const colRef = collection(db, "GiveAwayPSGToTT");
+          const q = query(colRef, orderBy("timestamp", "desc"), limit(1));
+
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            const lastDocData = querySnapshot.docs[0].data();
+
+            // Formatează timestamp-ul
+            const formattedDate = formatTimestamp(lastDocData.timestamp);
+
+            // Creează un HTML cu toate datele dorite
+            const html = `
+
+      <p>Full name: ${lastDocData.lastName} ${lastDocData.firstName}</p> -
+      <p>Telefon: ${lastDocData.phone} </p> -
+       <p>   Email: ${lastDocData.email} </p> -
+     <p> Actualizat la: ${formattedDate} </p> 
+    `;
+
+            $("#lastUpdated").html(html);
+          } else {
+            $("#lastUpdated").text("Nu există date.");
+          }
+        }
+        function renderTable(data) {
+          if ($.fn.dataTable.isDataTable("#adminTable")) {
+            table.clear().rows.add(data).draw();
+            return;
+          }
+
+          table = $("#adminTable").DataTable({
+            data,
+            columns: [
+              {
+                data: "lastName",
+                className: "editable",
+                render: (data) =>
+                  `<span class="editable-cell">${data || ""}</span>`,
+              },
+              {
+                data: "firstName",
+                className: "editable",
+                render: (data) =>
+                  `<span class="editable-cell">${data || ""}</span>`,
+              },
+              {
+                data: "username",
+                className: "editable",
+                render: (data) =>
+                  `<span class="editable-cell">${data || ""}</span>`,
+              },
+              {
+                data: "phone",
+                className: "editable",
+                render: (data) =>
+                  `<span class="editable-cell">${data || ""}</span>`,
+              },
+              {
+                data: "email",
+                className: "editable",
+                render: (data) =>
+                  `<span class="editable-cell">${data || ""}</span>`,
+              },
+              {
+                data: "createdAt",
+                render: (data) => formatTimestamp(data), // Format timestamp using formatTimestamp
+              },
+              {
+                data: null,
+                orderable: false,
+                render: function (_, __, rowData) {
+                  return `
                 <button class="editBtn action-btn mr-3">Editează</button>
                 <button class="saveBtn action-btn mr-3 hidden">Salvează</button>
                 <button class="cancelBtn action-btn mr-3 hidden">Anulează</button>
                 <button class="deleteBtn action-btn text-red-600">Șterge</button>
               `;
-            },
-          },
-        ],
-        dom: "Bfrtip",
-        buttons: [
-          {
-            extend: "csvHtml5",
-            text: "Exportă CSV",
-            className: "bg-indigo-600 text-white rounded px-4 py-2",
-            exportOptions: {
-              columns: ":visible:not(:last-child)", // Exclude the action column from CSV
-            },
-          },
-        ],
-        responsive: true,
+                },
+              },
+            ],
+            dom: "Bfrtip",
+            buttons: [
+              {
+                extend: "csvHtml5",
+                text: "Exportă CSV",
+                className: "bg-indigo-600 text-white rounded px-4 py-2",
+                exportOptions: {
+                  columns: [0, 1, 2, 3, 4], // Exclude the action column from CSV
+                },
+              },
+            ],
+            responsive: true,
+          });
+        }
+
+        function enableRowEdit($row) {
+          $row.find("td.editable").each(function () {
+            const $cell = $(this);
+            const text = $cell.find("span.editable-cell").text();
+            const colIndex = $cell.index();
+            let inputType = "text";
+            let maxLengthAttr = "";
+
+            if (colIndex === 3) inputType = "tel";
+            if (colIndex === 4) inputType = "email";
+            if (colIndex === 3)
+              maxLengthAttr = 'maxlength="10" pattern="\\d{10}"';
+
+            $cell.html(
+              `<input type="${inputType}" class="w-full border border-indigo-400 rounded px-2 py-1" value="${text}" ${maxLengthAttr} />`
+            );
+          });
+
+          $row.find(".editBtn").addClass("hidden");
+          $row.find(".saveBtn, .cancelBtn").removeClass("hidden");
+        }
+
+        function disableRowEdit($row, data) {
+          $row
+            .find("td")
+            .eq(0)
+            .html(`<span class="editable-cell">${data.lastName}</span>`);
+          $row
+            .find("td")
+            .eq(1)
+            .html(`<span class="editable-cell">${data.firstName}</span>`);
+          $row
+            .find("td")
+            .eq(2)
+            .html(`<span class="editable-cell">${data.username}</span>`);
+          $row
+            .find("td")
+            .eq(3)
+            .html(`<span class="editable-cell">${data.phone}</span>`);
+          $row
+            .find("td")
+            .eq(4)
+            .html(`<span class="editable-cell">${data.email}</span>`);
+          $row
+            .find("td")
+            .eq(5)
+            .html(
+              `<span class="editable-cell">${formatTimestamp(
+                data.createdAt
+              )}</span>`
+            );
+
+          $row.find(".editBtn").removeClass("hidden");
+          $row.find(".saveBtn, .cancelBtn").addClass("hidden");
+        }
+
+        // Load data and initialize table
+        const data = await loadData();
+        renderTable(data);
+
+        // Edit button
+        $("#adminTable tbody").on("click", ".editBtn", function () {
+          const $row = $(this).closest("tr");
+          enableRowEdit($row);
+        });
+
+        // Cancel button
+        $("#adminTable tbody").on("click", ".cancelBtn", function () {
+          const $row = $(this).closest("tr");
+          const rowData = table.row($row).data();
+          disableRowEdit($row, rowData);
+        });
+
+        // Save button
+        // Save button
+        $("#adminTable tbody").on("click", ".saveBtn", async function () {
+          const $row = $(this).closest("tr");
+          const rowData = table.row($row).data();
+          const inputs = $row.find("td.editable input");
+
+          const updatedData = {
+            lastName: inputs.eq(0).val().trim(),
+            firstName: inputs.eq(1).val().trim(),
+            username: inputs.eq(2).val().trim(),
+            phone: inputs.eq(3).val().trim(),
+            email: inputs.eq(4).val().trim(),
+          };
+
+          if (
+            !updatedData.lastName ||
+            !updatedData.firstName ||
+            !updatedData.username ||
+            !validatePhone(updatedData.phone) ||
+            !validateEmail(updatedData.email)
+          ) {
+            alert(
+              "Te rog completează toate câmpurile corect.\nTelefon: 10 cifre\nEmail: format valid"
+            );
+            return;
+          }
+
+          try {
+            const docRef = doc(db, "GiveAwayPSGToTT", rowData.id);
+
+            // Ensure getDoc is used correctly to fetch the document
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+              alert("Documentul nu există.");
+              return;
+            }
+
+            // Update the document if it exists
+            await updateDoc(docRef, updatedData);
+
+            Object.assign(rowData, updatedData);
+            table.row($row).data(rowData).invalidate();
+            disableRowEdit($row, rowData);
+            alert("Modificările au fost salvate.");
+          } catch (error) {
+            console.error("Eroare la salvare:", error);
+            alert("A apărut o eroare la salvarea modificărilor.");
+          }
+        });
+
+        // Delete button
+        $("#adminTable tbody").on("click", ".deleteBtn", async function () {
+          const $row = $(this).closest("tr");
+          const rowData = table.row($row).data();
+
+          // Cere numărul de telefon pentru confirmare
+          const phonePrompt = prompt(
+            `Pentru a confirma ștergerea, te rog introdu numărul de telefon al utilizatorului (${rowData.phone}):`
+          );
+
+          if (phonePrompt === null) {
+            // Dacă s-a apăsat Cancel în prompt
+            return;
+          }
+
+          if (phonePrompt.trim() !== rowData.phone) {
+            alert(
+              "Numărul de telefon introdus nu corespunde. Ștergerea a fost anulată."
+            );
+            return;
+          }
+
+          if (!confirm("Ești sigur că vrei să ștergi această intrare?")) return;
+
+          try {
+            await deleteDoc(doc(db, "GiveAwayPSGToTT", rowData.id));
+            table.row($row).remove().draw();
+            alert("Intrarea a fost ștearsă.");
+          } catch (error) {
+            console.error("Eroare la ștergere:", error);
+            alert("A apărut o eroare la ștergerea intrării.");
+          }
+        });
+        await loadLastUpdate();
       });
-    }
-
-    function enableRowEdit($row) {
-      $row.find("td.editable").each(function () {
-        const $cell = $(this);
-        const text = $cell.find("span.editable-cell").text();
-        const colIndex = $cell.index();
-        let inputType = "text";
-        let maxLengthAttr = "";
-
-        if (colIndex === 3) inputType = "tel";
-        if (colIndex === 4) inputType = "email";
-        if (colIndex === 3) maxLengthAttr = 'maxlength="10" pattern="\\d{10}"';
-
-        $cell.html(
-          `<input type="${inputType}" class="w-full border border-indigo-400 rounded px-2 py-1" value="${text}" ${maxLengthAttr} />`
-        );
-      });
-
-      $row.find(".editBtn").addClass("hidden");
-      $row.find(".saveBtn, .cancelBtn").removeClass("hidden");
-    }
-
-    function disableRowEdit($row, data) {
-      $row.find("td").eq(0).html(`<span class="editable-cell">${data.lastName}</span>`);
-      $row.find("td").eq(1).html(`<span class="editable-cell">${data.firstName}</span>`);
-      $row.find("td").eq(2).html(`<span class="editable-cell">${data.username}</span>`);
-      $row.find("td").eq(3).html(`<span class="editable-cell">${data.phone}</span>`);
-      $row.find("td").eq(4).html(`<span class="editable-cell">${data.email}</span>`);
-      $row.find("td").eq(5).html(`<span class="editable-cell">${formatTimestamp(data.createdAt)}</span>`);
-
-      $row.find(".editBtn").removeClass("hidden");
-      $row.find(".saveBtn, .cancelBtn").addClass("hidden");
-    }
-
-    // Load data and initialize table
-    const data = await loadData();
-    renderTable(data);
-
-    // Edit button
-    $("#adminTable tbody").on("click", ".editBtn", function () {
-      const $row = $(this).closest("tr");
-      enableRowEdit($row);
-    });
-
-    // Cancel button
-    $("#adminTable tbody").on("click", ".cancelBtn", function () {
-      const $row = $(this).closest("tr");
-      const rowData = table.row($row).data();
-      disableRowEdit($row, rowData);
-    });
-
-    // Save button
-   // Save button
-$("#adminTable tbody").on("click", ".saveBtn", async function () {
-  const $row = $(this).closest("tr");
-  const rowData = table.row($row).data();
-  const inputs = $row.find("td.editable input");
-
-  const updatedData = {
-    lastName: inputs.eq(0).val().trim(),
-    firstName: inputs.eq(1).val().trim(),
-    username: inputs.eq(2).val().trim(),
-    phone: inputs.eq(3).val().trim(),
-    email: inputs.eq(4).val().trim(),
-  };
-
-  if (
-    !updatedData.lastName ||
-    !updatedData.firstName ||
-    !updatedData.username ||
-    !validatePhone(updatedData.phone) ||
-    !validateEmail(updatedData.email)
-  ) {
-    alert(
-      "Te rog completează toate câmpurile corect.\nTelefon: 10 cifre\nEmail: format valid"
-    );
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "GiveAwayPSGToTT", rowData.id);
-
-    // Ensure getDoc is used correctly to fetch the document
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      alert("Documentul nu există.");
-      return;
-    }
-
-    // Update the document if it exists
-    await updateDoc(docRef, updatedData);
-
-    Object.assign(rowData, updatedData);
-    table.row($row).data(rowData).invalidate();
-    disableRowEdit($row, rowData);
-    alert("Modificările au fost salvate.");
-  } catch (error) {
-    console.error("Eroare la salvare:", error);
-    alert("A apărut o eroare la salvarea modificărilor.");
-  }
-});
-
-    // Delete button
-    $("#adminTable tbody").on("click", ".deleteBtn", async function () {
-      if (!confirm("Ești sigur că vrei să ștergi această intrare?")) return;
-
-      const $row = $(this).closest("tr");
-      const rowData = table.row($row).data();
-
-      try {
-        await deleteDoc(doc(db, "GiveAwayPSGToTT", rowData.id));
-        table.row($row).remove().draw();
-        alert("Intrarea a fost ștearsă.");
-      } catch (error) {
-        console.error("Eroare la ștergere:", error);
-        alert("A apărut o eroare la ștergerea intrării.");
-      }
-    });
-  });
-</script>
-
-</body>
+    </script>
+  </body>
 </html>
